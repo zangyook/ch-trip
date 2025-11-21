@@ -4,326 +4,241 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 📱 모바일 웹 앱 설정 (앱처럼 보이게 하는 핵심 코드) -->
+    <!-- 📱 앱 설정 -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#ffffff">
-    <title>청두 & 시안 여행</title>
+    <title>청두 & 시안 여행 (LIVE)</title>
 
+    <!-- 스타일 및 폰트 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background-color: #f8f9fa;
-            -webkit-tap-highlight-color: transparent;
-            padding-bottom: 100px;
-            /* 아이폰 노치 대응 */
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-        }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8f9fa; padding-bottom: 100px; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); user-select: none; -webkit-tap-highlight-color: transparent; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .timeline-container { position: relative; }
-        .timeline-line {
-            position: absolute;
-            left: 28px;
-            top: 20px;
-            bottom: 0;
-            width: 2px;
-            background-color: #e5e7eb;
-            z-index: 0;
-        }
-        
-        .btn-press:active { transform: scale(0.98); }
-        .heart-anim { transition: all 0.2s ease; }
-        .heart-anim:active { transform: scale(1.3); }
-        
+        .timeline-line { position: absolute; left: 28px; top: 20px; bottom: 0; width: 2px; bg-gray-200; z-index: 0; background-color: #e5e7eb; }
         .active-tab { border-bottom: 2px solid #ef4444; color: #ef4444; font-weight: 700; }
         .inactive-tab { color: #9ca3af; }
-
         .edit-mode-shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-1px, 0, 0); }
-            20%, 80% { transform: translate3d(2px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-            40%, 60% { transform: translate3d(4px, 0, 0); }
-        }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 max-w-md mx-auto shadow-2xl min-h-screen relative select-none">
+<body class="bg-gray-50 text-gray-800 max-w-md mx-auto shadow-2xl min-h-screen relative">
 
     <!-- Header -->
     <header class="bg-white shadow-sm sticky top-0 z-40">
         <div class="px-4 py-3 flex justify-between items-center bg-white border-b border-gray-100">
             <div>
-                <h1 class="text-xl font-bold text-gray-900 tracking-tight">청두 & 시안 여행</h1>
+                <h1 class="text-xl font-bold text-gray-900 tracking-tight">청두 & 시안 여행 <span class="text-[10px] text-blue-500 bg-blue-50 px-1 rounded align-top animate-pulse">LIVE</span></h1>
                 <p class="text-xs text-gray-500 flex items-center gap-1">
                     <span id="totalDays">6박 7일</span>
-                    <span id="saveStatus" class="text-green-500 hidden"><i class="fa-solid fa-check"></i> 저장됨</span>
+                    <span id="syncStatus" class="text-gray-300 text-[10px] ml-2"><i class="fa-solid fa-circle-notch fa-spin"></i> 연결 중...</span>
                 </p>
             </div>
             <div class="flex gap-2">
-                <button onclick="toggleEditMode()" id="btnEditMode" class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition hover:bg-gray-200">
-                    <i class="fa-solid fa-pen"></i>
-                </button>
-                <button onclick="confirmReset()" class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition hover:bg-gray-200">
-                    <i class="fa-solid fa-rotate-right"></i>
-                </button>
+                <button onclick="toggleEditMode()" id="btnEditMode" class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition hover:bg-gray-200"><i class="fa-solid fa-pen"></i></button>
             </div>
         </div>
         
-        <!-- View Tabs -->
         <div class="flex border-b border-gray-200 bg-white">
-            <button onclick="viewMode='list'; render();" class="flex-1 py-3 text-sm font-medium text-center text-red-500 border-b-2 border-red-500 transition" id="tabList">
-                일정 목록
-            </button>
-            <button onclick="viewMode='likes'; render();" class="flex-1 py-3 text-sm font-medium text-center text-gray-400 hover:text-gray-600 transition" id="tabLikes">
-                저장된 장소 (<span id="likeCount">0</span>)
-            </button>
+            <button onclick="viewMode='list'; render();" class="flex-1 py-3 text-sm font-medium text-center text-red-500 border-b-2 border-red-500 transition" id="tabList">일정 목록</button>
+            <button onclick="viewMode='likes'; render();" class="flex-1 py-3 text-sm font-medium text-center text-gray-400 hover:text-gray-600 transition" id="tabLikes">찜한 장소 (<span id="likeCount">0</span>)</button>
         </div>
 
-        <!-- Date Navigation -->
         <div id="dateNavWrapper" class="overflow-x-auto hide-scrollbar bg-white shadow-sm">
-            <div class="flex px-2 min-w-max" id="dateNav">
-                <!-- JS Generated -->
-            </div>
+            <div class="flex px-2 min-w-max" id="dateNav"></div>
         </div>
     </header>
 
-    <!-- Install Guide Banner (Shows only once) -->
-    <div id="installBanner" class="hidden bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3 text-sm flex justify-between items-center shadow-md">
-        <div class="flex gap-2 items-center">
-            <i class="fa-solid fa-mobile-screen"></i>
-            <span>브라우저 메뉴에서 <b>'홈 화면에 추가'</b>를 누르면 앱처럼 쓸 수 있어요!</span>
-        </div>
-        <button onclick="closeBanner()" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-
-    <!-- Main Content -->
-    <main id="schedule-container" class="p-4 min-h-[60vh]">
-        <!-- JS Generated -->
-    </main>
+    <main id="schedule-container" class="p-4 min-h-[60vh]"></main>
 
     <!-- Floating Add Button -->
     <div id="fabAdd" class="fixed bottom-24 right-6 z-30 hidden">
-        <button onclick="openEditModal(null)" class="bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition transform active:scale-90">
-            <i class="fa-solid fa-plus text-2xl"></i>
-        </button>
+        <button onclick="openEditModal(null)" class="bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition transform active:scale-90"><i class="fa-solid fa-plus text-2xl"></i></button>
     </div>
 
-    <!-- Map Choice Modal -->
+    <!-- Loading Overlay -->
+    <div id="loading" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
+        <div class="w-10 h-10 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+        <p class="text-gray-500 font-medium">여행 데이터 불러오는 중...</p>
+        <p class="text-xs text-gray-400 mt-2">잠시만 기다려주세요</p>
+    </div>
+
+    <!-- Modals -->
+    <!-- Map Modal -->
     <div id="mapModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center px-6 backdrop-blur-sm">
         <div class="bg-white rounded-2xl w-full max-w-sm p-6 animate-fade-in shadow-2xl">
             <div class="flex justify-between items-start mb-4">
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900" id="modalTitle">장소 이름</h3>
-                    <p class="text-sm text-gray-500" id="modalChnName">중국어 이름</p>
-                </div>
-                <button onclick="closeMapModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <div><h3 class="text-lg font-bold text-gray-900" id="modalTitle">장소</h3><p class="text-sm text-gray-500" id="modalChnName">중국어</p></div>
+                <button onclick="closeMapModal()" class="text-gray-400"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div class="grid grid-cols-2 gap-3">
-                <a id="btnGaode" href="#" target="_blank" class="flex flex-col items-center justify-center p-4 rounded-xl bg-blue-50 text-blue-700 border border-blue-100">
-                    <i class="fa-solid fa-location-dot text-2xl mb-2"></i>
-                    <span class="font-bold text-sm">고덕지도 (Amap)</span>
-                </a>
-                <a id="btnBaidu" href="#" target="_blank" class="flex flex-col items-center justify-center p-4 rounded-xl bg-red-50 text-red-700 border border-red-100">
-                    <i class="fa-solid fa-paw text-2xl mb-2"></i>
-                    <span class="font-bold text-sm">바이두맵 (Baidu)</span>
-                </a>
+                <a id="btnGaode" href="#" target="_blank" class="flex flex-col items-center justify-center p-4 rounded-xl bg-blue-50 text-blue-700 border border-blue-100"><i class="fa-solid fa-location-dot text-2xl mb-2"></i><span class="font-bold text-sm">고덕지도</span></a>
+                <a id="btnBaidu" href="#" target="_blank" class="flex flex-col items-center justify-center p-4 rounded-xl bg-red-50 text-red-700 border border-red-100"><i class="fa-solid fa-paw text-2xl mb-2"></i><span class="font-bold text-sm">바이두맵</span></a>
             </div>
-             <button onclick="copyChnName()" class="w-full mt-3 py-3 text-sm text-gray-600 bg-gray-100 rounded-lg font-medium">
-                <i class="fa-regular fa-copy mr-1"></i> 중국어 지명 복사
-            </button>
+             <button onclick="copyChnName()" class="w-full mt-3 py-3 text-sm text-gray-600 bg-gray-100 rounded-lg font-medium"><i class="fa-regular fa-copy mr-1"></i> 중국어 지명 복사</button>
         </div>
     </div>
 
-    <!-- Edit/Add Item Modal -->
+    <!-- Edit Modal -->
     <div id="editModal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-end sm:items-center justify-center sm:px-4">
         <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 animate-slide-up sm:animate-fade-in h-[85vh] sm:h-auto overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold" id="editModalTitle">일정 추가</h3>
                 <button onclick="closeEditModal()" class="text-gray-400"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
-            
             <form id="editForm" onsubmit="saveItem(event)" class="space-y-4">
                 <input type="hidden" id="editItemId">
-                
                 <div class="grid grid-cols-3 gap-4">
-                    <div class="col-span-1">
-                        <label class="block text-xs font-bold text-gray-500 mb-1">시간</label>
-                        <input type="text" id="editTime" placeholder="10:00" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" required>
-                    </div>
+                    <div class="col-span-1"><label class="block text-xs font-bold text-gray-500 mb-1">시간</label><input type="text" id="editTime" placeholder="10:00" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3" required></div>
                     <div class="col-span-2">
                          <label class="block text-xs font-bold text-gray-500 mb-1">아이콘</label>
                          <select id="editIcon" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3">
-                             <option value="fa-location-dot">📍 장소</option>
-                             <option value="fa-utensils">🍴 식사</option>
-                             <option value="fa-hotel">🏨 숙소</option>
-                             <option value="fa-plane">✈️ 비행기</option>
-                             <option value="fa-train">🚄 기차</option>
-                             <option value="fa-camera">📷 관광</option>
-                             <option value="fa-bag-shopping">🛍️ 쇼핑</option>
+                             <option value="fa-location-dot">📍 장소</option><option value="fa-utensils">🍴 식사</option><option value="fa-hotel">🏨 숙소</option><option value="fa-plane">✈️ 비행기</option><option value="fa-train">🚄 기차</option><option value="fa-camera">📷 관광</option><option value="fa-bag-shopping">🛍️ 쇼핑</option>
                          </select>
                     </div>
                 </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">장소명 (한글)</label>
-                    <input type="text" id="editTitle" placeholder="예: 병마용" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" required>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">장소명 (중국어) <span class="font-normal text-red-400">*지도 검색용</span></label>
-                    <input type="text" id="editChnName" placeholder="예: 兵马俑" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">설명 / 메모</label>
-                    <textarea id="editDesc" rows="3" placeholder="간단한 메모를 입력하세요" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
-                </div>
-
-                <details class="text-xs text-gray-500">
-                    <summary class="cursor-pointer mb-2">좌표 직접 입력 (선택사항)</summary>
-                    <div class="grid grid-cols-2 gap-3">
-                        <input type="number" step="any" id="editLat" placeholder="위도(Lat)" class="bg-gray-50 border border-gray-200 rounded p-2">
-                        <input type="number" step="any" id="editLng" placeholder="경도(Lng)" class="bg-gray-50 border border-gray-200 rounded p-2">
-                    </div>
-                </details>
-
-                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 transition mt-4">
-                    저장하기
-                </button>
-                
-                <button type="button" onclick="deleteCurrentItem()" id="btnDelete" class="w-full text-red-500 py-3 font-medium text-sm hidden">
-                    이 일정 삭제하기
-                </button>
+                <div><label class="block text-xs font-bold text-gray-500 mb-1">장소명 (한글)</label><input type="text" id="editTitle" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3" required></div>
+                <div><label class="block text-xs font-bold text-gray-500 mb-1">장소명 (중국어)</label><input type="text" id="editChnName" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3"></div>
+                <div><label class="block text-xs font-bold text-gray-500 mb-1">설명</label><textarea id="editDesc" rows="3" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3"></textarea></div>
+                <details class="text-xs text-gray-500"><summary class="cursor-pointer mb-2">좌표 (선택)</summary><div class="grid grid-cols-2 gap-3"><input type="number" step="any" id="editLat" placeholder="위도" class="bg-gray-50 border p-2"><input type="number" step="any" id="editLng" placeholder="경도" class="bg-gray-50 border p-2"></div></details>
+                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg mt-4">저장 (모두에게 반영)</button>
+                <button type="button" onclick="deleteCurrentItem()" id="btnDelete" class="w-full text-red-500 py-3 font-medium text-sm hidden">삭제</button>
             </form>
         </div>
     </div>
 
     <!-- Scroll Top -->
     <div class="fixed bottom-6 right-6 z-20">
-        <button onclick="window.scrollTo({top:0, behavior:'smooth'})" class="bg-white text-gray-800 w-10 h-10 rounded-full shadow border border-gray-200 flex items-center justify-center">
-            <i class="fa-solid fa-arrow-up"></i>
-        </button>
+        <button onclick="window.scrollTo({top:0, behavior:'smooth'})" class="bg-white text-gray-800 w-10 h-10 rounded-full shadow border border-gray-200 flex items-center justify-center"><i class="fa-solid fa-arrow-up"></i></button>
     </div>
 
-    <script>
-        // --- Initial Data ---
+    <!-- 🔥 Firebase SDK 및 로직 -->
+    <script type="module">
+        // 1. Firebase SDK 가져오기 (CDN 방식 유지)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+
+        // --------------------------------------------------------------------
+        // 🔥 사용자가 제공한 키값 적용 완료
+        // --------------------------------------------------------------------
+        const firebaseConfig = {
+          apiKey: "AIzaSyDhjSgDBdNu8stWUlqQbCWU2YhZkczlj3o",
+          authDomain: "mytrip-2025-2bc36.firebaseapp.com",
+          projectId: "mytrip-2025-2bc36",
+          storageBucket: "mytrip-2025-2bc36.firebasestorage.app",
+          messagingSenderId: "119786186294",
+          appId: "1:119786186294:web:724b3881fcc070096c9a97",
+          measurementId: "G-LCQD1E1QL7"
+        };
+        // --------------------------------------------------------------------
+
+        let app, db, analytics;
+        
+        // 3. Firebase 초기화 및 에러 처리
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            analytics = getAnalytics(app);
+            console.log("Firebase 연결 시도...");
+        } catch (e) {
+            console.error("Firebase 초기화 실패:", e);
+            alert("⚠️ 연결 오류\n\n인터넷 연결을 확인해주세요.");
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // 전역 변수 설정
+        window.toggleEditMode = toggleEditMode;
+        window.viewMode = 'list';
+        window.render = render;
+        window.openMapModal = openMapModal;
+        window.closeMapModal = closeMapModal;
+        window.copyChnName = copyChnName;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+        window.saveItem = saveItem;
+        window.deleteCurrentItem = deleteCurrentItem;
+
+        // 기본 데이터 (서버가 비어있을 때 사용)
         const initialScheduleData = [
-            {
-                day: 1, date: "12.30 (화)", city: "청두", title: "출국 및 이동",
-                items: [
-                    { id: 101, time: "12:00", title: "시안 셴양 국제공항", chnName: "西安咸阳国际机场", lat: 34.447, lng: 108.751, desc: "도착 후 바로 시안북역으로 이동", icon: "fa-plane-arrival" },
-                    { id: 102, time: "13:30", title: "시안북역 (고속철도)", chnName: "西安北站", lat: 34.376, lng: 108.939, desc: "G열차 탑승 (시안→청두 약 4시간)", icon: "fa-train" },
-                    { id: 103, time: "19:30", title: "청두 춘시루 (숙소)", chnName: "春熙路", lat: 30.655, lng: 104.081, desc: "호텔 체크인 및 시내 중심가 산책", icon: "fa-hotel" },
-                    { id: 104, time: "20:30", title: "하이디라오 훠궈", chnName: "海底捞火锅", lat: 30.656, lng: 104.082, desc: "쓰촨 정통 훠궈 체험 (대기 확인 필수)", icon: "fa-bowl-food" }
-                ]
-            },
-            {
-                day: 2, date: "12.31 (수)", city: "청두", title: "판다 & 카운트다운",
-                items: [
-                    { id: 201, time: "08:30", title: "청두 판다 기지", chnName: "成都大熊猫繁育研究基地", lat: 30.733, lng: 104.146, desc: "오전 일찍 방문해야 활발한 판다 관람 가능", icon: "fa-paw" },
-                    { id: 202, time: "14:30", title: "무후사 & 금리 거리", chnName: "武侯祠 / 锦里古街", lat: 30.646, lng: 104.049, desc: "삼국지의 역사와 전통 거리 산책", icon: "fa-landmark" },
-                    { id: 203, time: "19:00", title: "IFS 몰 & 타이쿠리", chnName: "成都IFS / 远洋太古里", lat: 30.655, lng: 104.081, desc: "건물에 매달린 판다 조형물과 쇼핑", icon: "fa-bag-shopping" },
-                    { id: 204, time: "23:50", title: "금융센터 쌍둥이빌딩", chnName: "天府国际金融中心", lat: 30.572, lng: 104.066, desc: "새해맞이 조명쇼 및 카운트다운 명소", icon: "fa-champagne-glasses", isHighlight: true }
-                ]
-            },
-            {
-                day: 3, date: "01.01 (목)", city: "청두", title: "여유와 힐링",
-                items: [
-                    { id: 301, time: "10:00", title: "인민공원 (허밍찻집)", chnName: "人民公园 (鹤鸣茶社)", lat: 30.660, lng: 104.056, desc: "차 한잔과 귀청소 체험", icon: "fa-mug-hot" },
-                    { id: 302, time: "12:30", title: "콴자이샹즈", chnName: "宽窄巷子", lat: 30.663, lng: 104.053, desc: "청나라 시대의 골목길 보존 지구", icon: "fa-road" },
-                    { id: 303, time: "15:00", title: "변검 공연 (수유차관)", chnName: "蜀风雅韵信义坊", lat: 30.664, lng: 104.045, desc: "쓰촨 전통 가면극 관람 (예약 필수)", icon: "fa-masks-theater" }
-                ]
-            },
-            {
-                day: 4, date: "01.02 (금)", city: "시안", title: "시안 이동 & 야경",
-                items: [
-                    { id: 401, time: "09:00", title: "청두동역", chnName: "成都东站", lat: 30.629, lng: 104.141, desc: "고속열차 탑승 (청두→시안)", icon: "fa-train" },
-                    { id: 402, time: "15:00", title: "시안 종루 & 고루", chnName: "西安钟楼 / 鼓楼", lat: 34.260, lng: 108.947, desc: "시안의 랜드마크 중심지", icon: "fa-bell" },
-                    { id: 403, time: "17:00", title: "회족 거리", chnName: "回民街", lat: 34.264, lng: 108.943, desc: "이국적인 먹거리 야시장 (뱡뱡면 추천)", icon: "fa-utensils" }
-                ]
-            },
-            {
-                day: 5, date: "01.03 (토)", city: "시안", title: "병마용 & 장한가",
-                items: [
-                    { id: 501, time: "10:00", title: "병마용갱", chnName: "秦始皇兵马俑博物馆", lat: 34.385, lng: 109.278, desc: "진시황의 지하 군단 (1호갱 필수)", icon: "fa-person-military-pointing", isHighlight: true },
-                    { id: 502, time: "14:00", title: "화청지", chnName: "华清宫", lat: 34.365, lng: 109.213, desc: "양귀비와 당현종의 온천 궁전", icon: "fa-mountain" },
-                    { id: 503, time: "18:00", title: "장한가 공연", chnName: "长恨歌", lat: 34.365, lng: 109.213, desc: "화청지 내 실경 야외 공연 (방한대책 필수)", icon: "fa-ticket", isHighlight: true }
-                ]
-            },
-            {
-                day: 6, date: "01.04 (일)", city: "시안", title: "대당불야성",
-                items: [
-                    { id: 601, time: "10:00", title: "대안탑", chnName: "大雁塔", lat: 34.219, lng: 108.964, desc: "현장법사의 불경 보관 탑", icon: "fa-gopuram" },
-                    { id: 602, time: "13:00", title: "왕홍 체험 (복식)", chnName: "大唐不夜城 (汉服体验)", lat: 34.213, lng: 108.962, desc: "당나라 전통 의상 대여 및 메이크업", icon: "fa-shirt" },
-                    { id: 603, time: "19:00", title: "대당불야성 야경", chnName: "大唐不夜城", lat: 34.213, lng: 108.962, desc: "중국 최고의 야경 거리와 거리 공연", icon: "fa-camera", isHighlight: true }
-                ]
-            },
-            {
-                day: 7, date: "01.05 (월)", city: "시안", title: "성벽 투어 및 귀국",
-                items: [
-                    { id: 701, time: "09:00", title: "시안 성벽 (남문)", chnName: "西安城墙 (永宁门)", lat: 34.251, lng: 108.948, desc: "성벽 위 자전거 타기", icon: "fa-bicycle" },
-                    { id: 702, time: "14:00", title: "시안 공항 이동", chnName: "西安咸阳国际机场", lat: 34.447, lng: 108.751, desc: "출국 수속 및 귀국", icon: "fa-plane-departure" }
-                ]
-            }
+            { day: 1, date: "12.30 (화)", city: "청두", title: "출국 및 이동", items: [{ id: 101, time: "12:00", title: "시안 셴양 국제공항", chnName: "西安咸阳国际机场", lat: 34.447, lng: 108.751, desc: "도착 후 바로 시안북역으로 이동", icon: "fa-plane-arrival" }, { id: 102, time: "13:30", title: "시안북역", chnName: "西安北站", lat: 34.376, lng: 108.939, desc: "G열차 탑승 (시안→청두)", icon: "fa-train" }, { id: 103, time: "19:30", title: "청두 호텔", chnName: "春熙路", lat: 30.655, lng: 104.081, desc: "체크인 후 춘시루 산책", icon: "fa-hotel" }] },
+            { day: 2, date: "12.31 (수)", city: "청두", title: "판다 & 카운트다운", items: [{ id: 201, time: "08:30", title: "청두 판다 기지", chnName: "成都大熊猫繁育研究基地", lat: 30.733, lng: 104.146, desc: "판다 관람", icon: "fa-paw" }, { id: 204, time: "23:50", title: "금융센터 쌍둥이빌딩", chnName: "天府国际金融中心", lat: 30.572, lng: 104.066, desc: "새해맞이 카운트다운", icon: "fa-champagne-glasses", isHighlight: true }] },
+            { day: 3, date: "01.01 (목)", city: "청두", title: "여유와 힐링", items: [{ id: 301, time: "10:00", title: "인민공원", chnName: "人民公园", lat: 30.660, lng: 104.056, desc: "차 한잔과 귀청소", icon: "fa-mug-hot" }] },
+            { day: 4, date: "01.02 (금)", city: "시안", title: "시안 이동 & 야경", items: [{ id: 401, time: "09:00", title: "청두동역", chnName: "成都东站", lat: 30.629, lng: 104.141, desc: "시안으로 이동", icon: "fa-train" }, { id: 402, time: "15:00", title: "종루 & 고루", chnName: "西安钟楼", lat: 34.260, lng: 108.947, desc: "시안 랜드마크", icon: "fa-bell" }] },
+            { day: 5, date: "01.03 (토)", city: "시안", title: "병마용 & 장한가", items: [{ id: 501, time: "10:00", title: "병마용갱", chnName: "秦始皇兵马俑博物馆", lat: 34.385, lng: 109.278, desc: "진시황의 군단", icon: "fa-person-military-pointing", isHighlight: true }] },
+            { day: 6, date: "01.04 (일)", city: "시안", title: "대당불야성", items: [{ id: 603, time: "19:00", title: "대당불야성", chnName: "大唐不夜城", lat: 34.213, lng: 108.962, desc: "최고의 야경", icon: "fa-camera", isHighlight: true }] },
+            { day: 7, date: "01.05 (월)", city: "시안", title: "귀국", items: [{ id: 702, time: "14:00", title: "공항 이동", chnName: "西安咸阳国际机场", lat: 34.447, lng: 108.751, desc: "귀국", icon: "fa-plane-departure" }] }
         ];
 
-        // --- State Management ---
+        // 상태 변수
         let scheduleData = [];
         let currentDay = 0;
-        let viewMode = 'list'; 
         let isEditMode = false;
-        let favorites = [];
+        let favorites = JSON.parse(localStorage.getItem('tripFavorites_final')) || [];
         let modalTarget = null;
 
-        // --- Load & Save System ---
-        function loadData() {
-            const savedSchedule = localStorage.getItem('tripSchedule_v3');
-            const savedFavorites = localStorage.getItem('tripFavorites_v3');
-            const bannerClosed = localStorage.getItem('tripBannerClosed_v3');
-            
-            if (savedSchedule) {
-                scheduleData = JSON.parse(savedSchedule);
-            } else {
-                scheduleData = JSON.parse(JSON.stringify(initialScheduleData));
+        // --- 실시간 동기화 로직 ---
+        async function initData() {
+            if (!db) {
+                // 설정키가 없어서 db가 초기화 안된 경우
+                scheduleData = initialScheduleData;
+                render();
+                return;
             }
 
-            if (savedFavorites) favorites = JSON.parse(savedFavorites);
-            
-            // Check PWA status
-            const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            if (!isPWA && !bannerClosed) {
-                document.getElementById('installBanner').classList.remove('hidden');
+            // Firestore의 'trips' 컬렉션 안에 'shared_schedule'이라는 문서 하나를 구독합니다.
+            const docRef = doc(db, "trips", "shared_schedule");
+
+            onSnapshot(docRef, (doc) => {
+                const source = doc.metadata.hasPendingWrites ? "Local" : "Server";
+                console.log("데이터 수신 위치: " + source);
+                
+                if (doc.exists()) {
+                    // 데이터가 있으면 가져옵니다.
+                    scheduleData = doc.data().data;
+                    updateSyncStatus("동기화 완료", "text-green-500");
+                } else {
+                    // 데이터가 없으면(최초 실행) 기본 데이터를 서버에 씁니다.
+                    scheduleData = initialScheduleData;
+                    setDoc(docRef, { data: initialScheduleData });
+                    updateSyncStatus("초기화 중...", "text-blue-500");
+                }
+                render();
+                document.getElementById('loading').style.display = 'none';
+            }, (error) => {
+                console.error("동기화 에러:", error);
+                // 권한 에러일 확률이 높음 (1단계 Firestore 생성 안했을 시)
+                if(error.code === 'permission-denied') {
+                    alert("⚠️ 데이터베이스 권한 오류!\n\nFirebase 콘솔에서 'Firestore Database'를 생성하고 '테스트 모드'로 설정했는지 확인해주세요.");
+                }
+                updateSyncStatus("연결 끊김", "text-red-500");
+                scheduleData = initialScheduleData; // 실패 시 로컬 데이터 사용
+                render();
+                document.getElementById('loading').style.display = 'none';
+            });
+        }
+
+        function updateSyncStatus(msg, colorClass) {
+            const el = document.getElementById('syncStatus');
+            el.innerHTML = `<i class="fa-solid fa-cloud"></i> ${msg}`;
+            el.className = `text-[10px] ml-2 ${colorClass}`;
+        }
+
+        async function saveData() {
+            if (!db) return;
+            updateSyncStatus("저장 중...", "text-orange-500");
+            try {
+                await setDoc(doc(db, "trips", "shared_schedule"), { data: scheduleData });
+                // 저장이 완료되면 onSnapshot이 자동으로 UI를 업데이트합니다.
+            } catch (e) {
+                console.error("저장 실패: ", e);
+                alert("저장 실패! 권한을 확인하세요.");
             }
         }
 
-        function saveData() {
-            localStorage.setItem('tripSchedule_v3', JSON.stringify(scheduleData));
-            localStorage.setItem('tripFavorites_v3', JSON.stringify(favorites));
-            const indicator = document.getElementById('saveStatus');
-            indicator.classList.remove('hidden');
-            setTimeout(() => indicator.classList.add('hidden'), 2000);
-        }
-
-        function confirmReset() {
-            if (confirm('모든 수정사항을 초기화하고 처음 상태로 되돌리시겠습니까?')) {
-                localStorage.removeItem('tripSchedule_v3');
-                location.reload();
-            }
-        }
-        
-        function closeBanner() {
-            document.getElementById('installBanner').classList.add('hidden');
-            localStorage.setItem('tripBannerClosed_v3', 'true');
-        }
-
-        // --- Render Logic ---
+        // --- UI 로직 (기존과 동일) ---
         function render() {
             const navContainer = document.getElementById('dateNav');
             const mainContainer = document.getElementById('schedule-container');
@@ -332,7 +247,7 @@
             
             document.getElementById('likeCount').innerText = favorites.length;
 
-            if (viewMode === 'list') {
+            if (window.viewMode === 'list') {
                 tabList.className = "flex-1 py-3 text-sm font-medium text-center text-red-500 border-b-2 border-red-500 transition";
                 tabLikes.className = "flex-1 py-3 text-sm font-medium text-center text-gray-400 hover:text-gray-600 transition";
                 document.getElementById('dateNavWrapper').classList.remove('hidden');
@@ -346,126 +261,71 @@
             }
 
             const fab = document.getElementById('fabAdd');
-            if (isEditMode && viewMode === 'list') fab.classList.remove('hidden');
+            if (isEditMode && window.viewMode === 'list') fab.classList.remove('hidden');
             else fab.classList.add('hidden');
         }
 
         function renderNav() {
             const container = document.getElementById('dateNav');
             container.innerHTML = '';
-            
             scheduleData.forEach((dayData, idx) => {
                 const btn = document.createElement('button');
                 const isActive = idx === currentDay;
                 btn.className = `flex-none py-3 px-5 text-center transition-colors ${isActive ? 'active-tab' : 'inactive-tab'}`;
                 btn.onclick = () => { currentDay = idx; render(); };
-                btn.innerHTML = `
-                    <div class="text-xs mb-0.5">${dayData.city}</div>
-                    <div class="text-sm">${dayData.date.split(' ')[0]}</div>
-                `;
+                btn.innerHTML = `<div class="text-xs mb-0.5">${dayData.city}</div><div class="text-sm">${dayData.date.split(' ')[0]}</div>`;
                 container.appendChild(btn);
-                if (isActive) {
-                    setTimeout(() => btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 100);
-                }
+                if (isActive) setTimeout(() => btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 100);
             });
         }
 
         function renderList(container) {
             const data = scheduleData[currentDay];
-            let html = `
-                <div class="animate-fade-in pb-16">
-                    <div class="mb-6 mt-2">
-                        <h2 class="text-2xl font-bold text-gray-800">${data.title}</h2>
-                        <p class="text-sm text-gray-500 mt-1">${data.date} · ${data.items.length}개의 일정</p>
-                    </div>
-                    <div class="timeline-container"><div class="timeline-line"></div>
-            `;
+            let html = `<div class="animate-fade-in pb-16"><div class="mb-6 mt-2"><h2 class="text-2xl font-bold text-gray-800">${data.title}</h2><p class="text-sm text-gray-500 mt-1">${data.date} · ${data.items.length}개의 일정</p></div><div class="timeline-line"></div>`;
 
-            if (data.items.length === 0) {
-                html += `<div class="pl-12 py-8 text-gray-400 text-sm">등록된 일정이 없습니다. + 버튼을 눌러 추가하세요.</div>`;
-            }
+            if (data.items.length === 0) html += `<div class="pl-12 py-8 text-gray-400 text-sm">등록된 일정이 없습니다.</div>`;
 
             data.items.forEach((item, index) => {
                 const isLiked = favorites.includes(item.id);
                 html += createCardHtml(item, index + 1, isLiked);
             });
-            html += `</div></div>`;
+            html += `</div>`;
             container.innerHTML = html;
         }
 
         function renderLikes(container) {
             const allItems = scheduleData.flatMap(d => d.items);
             const likedItems = allItems.filter(item => favorites.includes(item.id));
-
-            if (likedItems.length === 0) {
-                container.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-64 text-gray-400 animate-fade-in">
-                        <i class="fa-regular fa-heart text-4xl mb-3"></i>
-                        <p>저장된 장소가 없습니다.</p>
-                        <p class="text-xs mt-1">하트 아이콘을 눌러 일정을 저장해보세요.</p>
-                    </div>
-                `;
-                return;
-            }
-
+            if (likedItems.length === 0) return container.innerHTML = `<div class="flex flex-col items-center justify-center h-64 text-gray-400 animate-fade-in"><i class="fa-regular fa-heart text-4xl mb-3"></i><p>저장된 장소가 없습니다.</p></div>`;
             let html = `<div class="mt-4 animate-fade-in"><h2 class="text-xl font-bold mb-4 px-1">저장된 장소 (${likedItems.length})</h2><div class="space-y-4">`;
-            likedItems.forEach(item => {
-                html += createCardHtml(item, null, true); 
-            });
+            likedItems.forEach(item => html += createCardHtml(item, null, true));
             html += `</div></div>`;
             container.innerHTML = html;
         }
 
         function createCardHtml(item, index, isLiked) {
-            const editOverlay = isEditMode ? `
-                <div class="absolute inset-0 bg-white/80 z-20 flex items-center justify-center gap-3 backdrop-blur-[1px] animate-fade-in border-2 border-blue-100 rounded-xl">
-                    <button onclick="openEditModal(${item.id})" class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow font-bold text-sm hover:bg-blue-600">수정</button>
-                    <button onclick="deleteItem(${item.id})" class="bg-red-500 text-white px-4 py-2 rounded-lg shadow font-bold text-sm hover:bg-red-600">삭제</button>
-                </div>
-            ` : '';
-
+            const editOverlay = isEditMode ? `<div class="absolute inset-0 bg-white/80 z-20 flex items-center justify-center gap-3 backdrop-blur-[1px] animate-fade-in border-2 border-blue-100 rounded-xl"><button onclick="openEditModal(${item.id})" class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow font-bold text-sm">수정</button><button onclick="deleteItem(${item.id})" class="bg-red-500 text-white px-4 py-2 rounded-lg shadow font-bold text-sm">삭제</button></div>` : '';
+            const likeBtn = !isEditMode ? `<button onclick="toggleLike(${item.id})" class="w-8 h-8 flex items-center justify-center -mr-2 -mt-2 heart-anim"><i class="${isLiked ? 'fa-solid text-red-500' : 'fa-regular text-gray-400'} fa-heart text-lg"></i></button>` : '';
+            
             return `
                 <div class="relative flex gap-4 mb-8 z-10 items-start group ${isEditMode ? 'edit-mode-shake' : ''}">
-                    <div class="flex-shrink-0 w-14 flex flex-col items-center">
-                        <div class="w-8 h-8 rounded-full ${item.isHighlight ? 'bg-red-500 text-white shadow-red-200' : 'bg-white border-2 border-gray-200 text-gray-500'} shadow-sm flex items-center justify-center text-sm font-bold z-10 mb-1">
-                            ${index ? index : `<i class="fa-solid ${item.icon} text-xs"></i>`}
-                        </div>
-                        ${index ? `<span class="text-xs text-gray-400 font-mono">${item.time}</span>` : ''}
-                    </div>
+                    <div class="flex-shrink-0 w-14 flex flex-col items-center"><div class="w-8 h-8 rounded-full ${item.isHighlight ? 'bg-red-500 text-white shadow-red-200' : 'bg-white border-2 border-gray-200 text-gray-500'} shadow-sm flex items-center justify-center text-sm font-bold z-10 mb-1">${index ? index : `<i class="fa-solid ${item.icon} text-xs"></i>`}</div>${index ? `<span class="text-xs text-gray-400 font-mono">${item.time}</span>` : ''}</div>
                     <div class="flex-1 bg-white rounded-xl p-4 shadow-sm border border-gray-100 btn-press relative overflow-hidden">
                         ${editOverlay}
-                        <div class="flex justify-between items-start mb-1">
-                            <h3 class="font-bold text-gray-800 text-lg leading-tight">${item.title}</h3>
-                            ${!isEditMode ? `
-                            <button onclick="toggleLike(${item.id})" class="w-8 h-8 flex items-center justify-center -mr-2 -mt-2 heart-anim">
-                                <i class="${isLiked ? 'fa-solid text-red-500' : 'fa-regular text-gray-400'} fa-heart text-lg"></i>
-                            </button>` : ''}
-                        </div>
+                        <div class="flex justify-between items-start mb-1"><h3 class="font-bold text-gray-800 text-lg leading-tight">${item.title}</h3>${likeBtn}</div>
                         <p class="text-xs text-gray-500 font-medium mb-2">${item.chnName || '중국어 지명 없음'}</p>
                         <p class="text-sm text-gray-600 leading-relaxed mb-3 line-clamp-2">${item.desc}</p>
-                        <div class="flex gap-2 mt-3 border-t border-gray-50 pt-3">
-                            <button onclick="openMapModal('${item.title}', '${item.chnName || item.title}', ${item.lat || 0}, ${item.lng || 0})" 
-                                class="flex-1 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition">
-                                <i class="fa-solid fa-map-location-dot"></i>
-                                지도 보기
-                            </button>
-                        </div>
+                        <div class="flex gap-2 mt-3 border-t border-gray-50 pt-3"><button onclick="openMapModal('${item.title}', '${item.chnName || item.title}', ${item.lat || 0}, ${item.lng || 0})" class="flex-1 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition"><i class="fa-solid fa-map-location-dot"></i> 지도 보기</button></div>
                     </div>
                 </div>
             `;
         }
 
-        // --- Editing Logic ---
+        // Actions
         function toggleEditMode() {
             isEditMode = !isEditMode;
             const btn = document.getElementById('btnEditMode');
-            if (isEditMode) {
-                btn.classList.add('bg-blue-500', 'text-white');
-                btn.classList.remove('bg-gray-100', 'text-gray-600');
-            } else {
-                btn.classList.remove('bg-blue-500', 'text-white');
-                btn.classList.add('bg-gray-100', 'text-gray-600');
-            }
+            btn.className = `w-10 h-10 rounded-full flex items-center justify-center transition ${isEditMode ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`;
             render();
         }
 
@@ -473,7 +333,6 @@
             const modal = document.getElementById('editModal');
             const form = document.getElementById('editForm');
             const btnDelete = document.getElementById('btnDelete');
-
             if (itemId) {
                 const dayData = scheduleData[currentDay];
                 const item = dayData.items.find(i => i.id === itemId);
@@ -503,50 +362,50 @@
         function saveItem(e) {
             e.preventDefault();
             const idVal = document.getElementById('editItemId').value;
-            const time = document.getElementById('editTime').value;
-            const icon = document.getElementById('editIcon').value;
-            const title = document.getElementById('editTitle').value;
-            const chnName = document.getElementById('editChnName').value;
-            const desc = document.getElementById('editDesc').value;
-            const lat = parseFloat(document.getElementById('editLat').value) || 34.26; 
-            const lng = parseFloat(document.getElementById('editLng').value) || 108.94;
+            const itemData = {
+                time: document.getElementById('editTime').value,
+                icon: document.getElementById('editIcon').value,
+                title: document.getElementById('editTitle').value,
+                chnName: document.getElementById('editChnName').value,
+                desc: document.getElementById('editDesc').value,
+                lat: parseFloat(document.getElementById('editLat').value) || 34.26,
+                lng: parseFloat(document.getElementById('editLng').value) || 108.94
+            };
 
             if (idVal) {
                 const id = parseInt(idVal);
-                const dayData = scheduleData[currentDay];
-                const idx = dayData.items.findIndex(i => i.id === id);
-                if (idx > -1) dayData.items[idx] = { ...dayData.items[idx], time, icon, title, chnName, desc, lat, lng };
+                const items = scheduleData[currentDay].items;
+                const idx = items.findIndex(i => i.id === id);
+                if (idx > -1) items[idx] = { ...items[idx], ...itemData };
             } else {
-                const newItem = { id: Date.now(), time, icon, title, chnName, desc, lat, lng, isHighlight: false };
-                scheduleData[currentDay].items.push(newItem);
+                scheduleData[currentDay].items.push({ id: Date.now(), ...itemData, isHighlight: false });
             }
             scheduleData[currentDay].items.sort((a, b) => a.time.localeCompare(b.time));
-            saveData();
-            closeEditModal();
-            render();
+            
+            // Save to Cloud
+            saveData().then(() => {
+                closeEditModal();
+            });
         }
 
         function deleteCurrentItem() {
             const idVal = document.getElementById('editItemId').value;
-            if (idVal) deleteItem(parseInt(idVal));
-            closeEditModal();
-        }
-
-        function deleteItem(id) {
-            if (confirm('정말 삭제하시겠습니까?')) {
-                scheduleData[currentDay].items = scheduleData[currentDay].items.filter(i => i.id !== id);
-                saveData();
-                render();
+            if (idVal) {
+                 if (confirm('정말 삭제하시겠습니까? (모두에게 반영됩니다)')) {
+                     scheduleData[currentDay].items = scheduleData[currentDay].items.filter(i => i.id !== parseInt(idVal));
+                     saveData().then(() => closeEditModal());
+                 }
             }
         }
 
-        function toggleLike(id) {
+        function toggleLike(id) { // Local only
             if (favorites.includes(id)) favorites = favorites.filter(fid => fid !== id);
             else favorites.push(id);
-            saveData();
+            localStorage.setItem('tripFavorites_final', JSON.stringify(favorites));
             render();
         }
 
+        // Maps
         function openMapModal(title, chnName, lat, lng) {
             modalTarget = { title, chnName };
             document.getElementById('modalTitle').innerText = title;
@@ -555,22 +414,12 @@
             document.getElementById('btnBaidu').href = `http://api.map.baidu.com/marker?location=${lat},${lng}&title=${encodeURIComponent(chnName)}&content=${encodeURIComponent(title)}&output=html`;
             document.getElementById('mapModal').classList.remove('hidden');
         }
-
         function closeMapModal() { document.getElementById('mapModal').classList.add('hidden'); }
-        
-        function copyChnName() {
-            if(modalTarget && modalTarget.chnName) {
-                navigator.clipboard.writeText(modalTarget.chnName).then(() => alert('복사되었습니다!'));
-            }
-        }
-        
-        // Global Listeners
+        function copyChnName() { if(modalTarget && modalTarget.chnName) navigator.clipboard.writeText(modalTarget.chnName).then(() => alert('복사되었습니다!')); }
         document.getElementById('mapModal').addEventListener('click', (e) => { if (e.target.id === 'mapModal') closeMapModal(); });
-
-        // Init
-        loadData();
-        render();
-
+        
+        // Start
+        initData();
     </script>
     
     <style>
