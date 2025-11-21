@@ -17,12 +17,24 @@
         .inactive-tab { color: #9ca3af; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        
+        /* 🖨️ 인쇄 전용 스타일 (핵심 수정) */
         @media print {
-            body { background: white; padding: 0; }
-            header, #fabAdd, .no-print { display: none !important; }
-            #schedule-container { padding: 0; }
-            .timeline-line { display: none; }
-            .shadow-sm, .shadow-2xl { box-shadow: none !important; border: 1px solid #eee; }
+            /* 기존 화면의 모든 요소 숨김 */
+            body > * { display: none !important; }
+            
+            /* 인쇄 영역만 표시 */
+            #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; padding: 20px; }
+            #print-area * { visibility: visible; }
+            
+            /* 인쇄 시 스타일 재정의 (잉크 절약 및 가독성) */
+            .print-day-header { break-inside: avoid; page-break-after: avoid; border-bottom: 2px solid #333; margin-top: 30px; padding-bottom: 5px; margin-bottom: 15px; }
+            .print-item { break-inside: avoid; page-break-inside: avoid; display: flex; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+            .print-time { font-weight: bold; width: 60px; flex-shrink: 0; }
+            .print-content { flex-grow: 1; }
+            .print-title { font-weight: bold; font-size: 16px; }
+            .print-chn { font-size: 12px; color: #666; margin-top: 2px; }
+            .print-desc { font-size: 12px; color: #444; margin-top: 4px; white-space: pre-line; }
         }
     </style>
 </head>
@@ -39,7 +51,6 @@
                 </p>
             </div>
             <div class="flex gap-2">
-                <!-- Settings Button -->
                 <button onclick="openSettingsModal()" class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition hover:bg-gray-200">
                     <i class="fa-solid fa-gear"></i>
                 </button>
@@ -59,6 +70,9 @@
     <!-- Main Content -->
     <main id="schedule-container" class="p-4 min-h-[60vh] pb-32"></main>
 
+    <!-- 🖨️ 인쇄 전용 숨겨진 영역 (여기에 전체 일정이 그려짐) -->
+    <div id="print-area" class="hidden"></div>
+
     <!-- FAB -->
     <div id="fabAdd" class="fixed bottom-24 right-6 z-30 hidden">
         <button onclick="handleAddButton()" class="bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition transform active:scale-90"><i class="fa-solid fa-plus text-2xl"></i></button>
@@ -71,7 +85,7 @@
     </div>
 
     <!-- Modals -->
-    <!-- 1. Settings Modal (New!) -->
+    <!-- 1. Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-black/60 z-[70] hidden flex items-center justify-center px-6 backdrop-blur-sm">
         <div class="bg-white rounded-2xl w-full max-w-sm p-6 animate-fade-in shadow-2xl">
             <div class="flex justify-between items-center mb-6">
@@ -97,13 +111,14 @@
                     </label>
                 </div>
 
-                <button onclick="window.print()" class="w-full py-3 text-gray-500 text-sm hover:text-gray-800">
-                    <i class="fa-solid fa-print mr-2"></i> 인쇄하기 (PDF 저장)
+                <!-- 🔥 인쇄 버튼 수정됨: printFullSchedule() 호출 -->
+                <button onclick="printFullSchedule()" class="w-full py-3 text-gray-800 font-bold text-sm bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-200">
+                    <i class="fa-solid fa-print mr-2"></i> 전체 일정 인쇄하기 (PDF)
                 </button>
             </div>
             
             <div class="mt-6 pt-4 border-t border-gray-100 text-center">
-                <p class="text-[10px] text-gray-400">App Version 2.1 (Safe Mode)</p>
+                <p class="text-[10px] text-gray-400">App Version 2.2 (Print Fix)</p>
             </div>
         </div>
     </div>
@@ -158,9 +173,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --------------------------------------------------------------------
-        // 🔥 [필수] 본인의 Firebase Config로 교체하세요!
-        // -------------------------------------------------------------------- 
         const firebaseConfig = {
           apiKey: "AIzaSyDhjSgDBdNu8stWUlqQbCWU2YhZkczlj3o",
           authDomain: "mytrip-2025-2bc36.firebaseapp.com",
@@ -170,9 +182,6 @@
           appId: "1:119786186294:web:724b3881fcc070096c9a97",
           measurementId: "G-LCQD1E1QL7"
         };
-
-        
-        // --------------------------------------------------------------------
 
         let app, db;
         let isDataLoadedFromServer = false;
@@ -198,12 +207,13 @@
         window.handleAddButton = handleAddButton;
         window.toggleWishlistPicker = toggleWishlistPicker;
         window.fillFromWishlist = fillFromWishlist;
-        
-        // New Backup Functions
         window.openSettingsModal = () => document.getElementById('settingsModal').classList.remove('hidden');
         window.closeSettingsModal = () => document.getElementById('settingsModal').classList.add('hidden');
         window.downloadBackup = downloadBackup;
         window.restoreBackup = restoreBackup;
+        
+        // 🔥 New Print Function
+        window.printFullSchedule = printFullSchedule;
 
         // Fallback Data
         const initialData = {
@@ -223,20 +233,66 @@
         let wishlistData = initialData.wishlist;
         let currentDay = 0;
         let viewMode = 'list';
-        let isEditMode = false; // Always enabled basically in this design but kept for state
+        let isEditMode = false; 
         let modalTarget = null;
 
-        // --- Backup & Restore Logic (NEW) ---
-        function downloadBackup() {
-            if (!scheduleData || scheduleData.length === 0) {
-                alert("백업할 데이터가 없습니다.");
-                return;
+        // --- Print Logic (NEW) ---
+        function printFullSchedule() {
+            const printArea = document.getElementById('print-area');
+            let html = `<h1 style="text-align:center; font-size:24px; margin-bottom:30px;">청두 & 시안 6박 7일 여행 일정표</h1>`;
+            
+            scheduleData.forEach(day => {
+                html += `
+                    <div class="print-day-header">
+                        <span style="font-size:20px; font-weight:bold;">Day ${day.day}</span> 
+                        <span style="font-size:16px; color:#555; margin-left:10px;">${day.date} (${day.city})</span>
+                        <div style="font-size:14px; color:#777; margin-top:4px;">${day.title}</div>
+                    </div>
+                `;
+                
+                if (day.items.length === 0) {
+                    html += `<div style="padding:10px; color:#999; font-style:italic; font-size:12px;">일정 없음</div>`;
+                } else {
+                    day.items.forEach(item => {
+                        html += `
+                            <div class="print-item">
+                                <div class="print-time">${item.time}</div>
+                                <div class="print-content">
+                                    <div class="print-title">${item.title}</div>
+                                    ${item.chnName ? `<div class="print-chn">${item.chnName}</div>` : ''}
+                                    ${item.desc ? `<div class="print-desc">${item.desc}</div>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            });
+            
+            // 위시리스트 추가 (선택사항)
+            if (wishlistData.length > 0) {
+                html += `<div class="print-day-header" style="margin-top:50px; border-color:#ccc;">💖 가고 싶은 곳 (보관함)</div>`;
+                wishlistData.forEach(item => {
+                    html += `
+                        <div class="print-item">
+                            <div class="print-time" style="font-size:20px; color:#e53e3e;">♥</div>
+                            <div class="print-content">
+                                <div class="print-title">${item.title}</div>
+                                ${item.chnName ? `<div class="print-chn">${item.chnName}</div>` : ''}
+                                ${item.desc ? `<div class="print-desc">${item.desc}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
             }
-            const backupData = {
-                schedule: scheduleData,
-                wishlist: wishlistData,
-                timestamp: new Date().toISOString()
-            };
+
+            printArea.innerHTML = html;
+            window.print();
+        }
+
+        // --- Backup & Restore Logic ---
+        function downloadBackup() {
+            if (!scheduleData || scheduleData.length === 0) { alert("백업할 데이터가 없습니다."); return; }
+            const backupData = { schedule: scheduleData, wishlist: wishlistData, timestamp: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(backupData, null, 2)], {type: "application/json"});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -249,47 +305,31 @@
 
         function restoreBackup(input) {
             if (!input.files || !input.files[0]) return;
-            
-            if (!isDataLoadedFromServer) {
-                alert("서버와 연결된 상태에서만 복원할 수 있습니다.");
-                input.value = ''; 
-                return;
-            }
-
-            if (!confirm("⚠️ 주의!\n\n현재 앱에 있는 모든 일정이 삭제되고,\n선택한 백업 파일 내용으로 덮어씌워집니다.\n\n진행하시겠습니까?")) {
-                input.value = '';
-                return;
-            }
-
+            if (!isDataLoadedFromServer) { alert("서버와 연결된 상태에서만 복원할 수 있습니다."); input.value = ''; return; }
+            if (!confirm("⚠️ 주의!\n\n현재 앱에 있는 모든 일정이 삭제되고,\n선택한 백업 파일 내용으로 덮어씌워집니다.\n\n진행하시겠습니까?")) { input.value = ''; return; }
             const file = input.files[0];
             const reader = new FileReader();
-            
             reader.onload = async function(e) {
                 try {
                     const restored = JSON.parse(e.target.result);
                     if (restored.schedule && Array.isArray(restored.schedule)) {
                         scheduleData = restored.schedule;
                         wishlistData = restored.wishlist || [];
-                        await saveData(); // Save to Firebase immediately
-                        alert("복원 완료! 데이터가 업데이트되었습니다.");
+                        await saveData(); 
+                        alert("복원 완료!");
                         closeSettingsModal();
                         render();
-                    } else {
-                        throw new Error("올바르지 않은 백업 파일 형식입니다.");
-                    }
-                } catch (err) {
-                    alert("복원 실패: " + err.message);
-                }
+                    } else throw new Error("올바르지 않은 파일");
+                } catch (err) { alert("복원 실패: " + err.message); }
             };
             reader.readAsText(file);
-            input.value = ''; // Reset input
+            input.value = ''; 
         }
 
         // --- Firebase Logic ---
         async function initData() {
             if (!db) { render(); return; }
             const docRef = doc(db, "trips", "shared_schedule");
-            
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
@@ -324,7 +364,6 @@
             const badge = document.getElementById('liveBadge');
             const sync = document.getElementById('syncStatus');
             const saveBtn = document.getElementById('btnSave');
-            
             if (isOnline) {
                 badge.innerText = "LIVE";
                 badge.className = "text-[10px] text-blue-500 bg-blue-50 px-1 rounded align-top animate-pulse";
@@ -334,29 +373,16 @@
                 badge.innerText = "OFFLINE";
                 badge.className = "text-[10px] text-red-500 bg-red-50 px-1 rounded align-top";
                 sync.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> <span class="text-red-500">연결 끊김</span>`;
-                if(saveBtn) {
-                    saveBtn.disabled = true;
-                    saveBtn.innerText = "연결 대기중...";
-                    saveBtn.classList.add('bg-gray-400');
-                }
+                if(saveBtn) { saveBtn.disabled = true; saveBtn.innerText = "연결 대기중..."; saveBtn.classList.add('bg-gray-400'); }
             }
         }
 
         async function saveData() {
-            if (!db || !isDataLoadedFromServer) {
-                alert("⚠️ 서버와 연결되지 않아 저장할 수 없습니다.");
-                return;
-            }
+            if (!db || !isDataLoadedFromServer) { alert("⚠️ 서버와 연결되지 않아 저장할 수 없습니다."); return; }
             document.getElementById('syncStatus').innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-orange-500"></i>`;
             try {
-                await setDoc(doc(db, "trips", "shared_schedule"), { 
-                    data: scheduleData,
-                    wishlist: wishlistData 
-                });
-            } catch(e) { 
-                alert("저장 실패: 인터넷 연결을 확인하세요.");
-                updateStatus(false);
-            }
+                await setDoc(doc(db, "trips", "shared_schedule"), { data: scheduleData, wishlist: wishlistData });
+            } catch(e) { alert("저장 실패"); updateStatus(false); }
         }
 
         // --- UI Logic ---
@@ -374,11 +400,8 @@
             document.getElementById('wishlistCount').innerText = wishlistData.length;
             const container = document.getElementById('schedule-container');
             const fab = document.getElementById('fabAdd');
-            
             if (viewMode === 'list') { renderNav(); renderSchedule(container); }
             else { renderWishlist(container); }
-
-            // Toggle FAB
             fab.classList.remove('hidden');
         }
 
@@ -405,10 +428,7 @@
         }
 
         function renderWishlist(container) {
-            if (wishlistData.length === 0) {
-                container.innerHTML = `<div class="flex flex-col items-center justify-center h-64 text-gray-400 animate-fade-in"><i class="fa-regular fa-heart text-4xl mb-3"></i><p>보관함이 비어있습니다.</p></div>`;
-                return;
-            }
+            if (wishlistData.length === 0) { container.innerHTML = `<div class="flex flex-col items-center justify-center h-64 text-gray-400 animate-fade-in"><i class="fa-regular fa-heart text-4xl mb-3"></i><p>보관함이 비어있습니다.</p></div>`; return; }
             let html = `<div class="mt-4 animate-fade-in grid grid-cols-1 gap-4">`;
             wishlistData.forEach(item => html += createCardHtml(item, null, 'wishlist'));
             html += `</div>`;
@@ -418,11 +438,6 @@
         function createCardHtml(item, index, type) {
             let actionButtons = '';
             if (type === 'schedule') {
-                actionButtons = `<div class="absolute inset-0 bg-white/90 z-20 flex items-center justify-center gap-3 backdrop-blur-[1px] border-2 border-blue-100 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"><button onclick="openEditModal(${item.id}, 'schedule')" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold">수정</button></div>`;
-                // Mobile touch friendly: always show edit button on top right for schedule too? 
-                // Let's stick to the clean look but make sure tap works. 
-                // Actually, let's make it simpler: Tap card to edit? No, tap card to see map.
-                // Let's add a small edit icon for schedule items too to make it discoverable
                 actionButtons = `<div class="absolute top-3 right-3"><button onclick="openEditModal(${item.id}, 'schedule')" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen"></i></button></div>`;
             } else if (type === 'wishlist') {
                 actionButtons = `<div class="absolute top-3 right-3"><button onclick="openEditModal(${item.id}, 'wishlist')" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen"></i></button></div>`;
@@ -510,10 +525,7 @@
 
         function saveItem(e) {
             e.preventDefault();
-            if (!isDataLoadedFromServer) {
-                alert("연결 대기중입니다. 잠시만 기다려주세요.");
-                return;
-            }
+            if (!isDataLoadedFromServer) { alert("연결 대기중입니다. 잠시만 기다려주세요."); return; }
             const idVal = document.getElementById('editItemId').value;
             const mode = document.getElementById('editItemMode').value;
             const itemData = {
