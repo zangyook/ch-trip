@@ -4,131 +4,124 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#ffffff">
-    <title>청두 & 시안 여행 (Backup)</title>
+    <title>청두 & 시안 여행 (Dynamic)</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8f9fa; padding-bottom: 100px; padding-top: env(safe-area-inset-top); user-select: none; -webkit-tap-highlight-color: transparent; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .timeline-line { position: absolute; left: 28px; top: 20px; bottom: 0; width: 2px; bg-gray-200; z-index: 0; background-color: #e5e7eb; }
         .active-tab { border-bottom: 2px solid #ef4444; color: #ef4444; font-weight: 700; }
         .inactive-tab { color: #9ca3af; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
         
-        /* 🖨️ 인쇄 전용 스타일 (핵심 수정) */
+        /* PC 화면에서 타임라인 라인 위치 조정 */
+        @media (min-width: 768px) {
+            .timeline-line { left: 50%; transform: translateX(-50%); }
+        }
+
+        /* 🖨️ 인쇄 스타일 */
         @media print {
-            /* 기존 화면의 모든 요소 숨김 */
             body > * { display: none !important; }
-            
-            /* 인쇄 영역만 표시 */
-            #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; padding: 20px; }
+            #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; padding: 40px; }
             #print-area * { visibility: visible; }
-            
-            /* 인쇄 시 스타일 재정의 (잉크 절약 및 가독성) */
-            .print-day-header { break-inside: avoid; page-break-after: avoid; border-bottom: 2px solid #333; margin-top: 30px; padding-bottom: 5px; margin-bottom: 15px; }
-            .print-item { break-inside: avoid; page-break-inside: avoid; display: flex; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-            .print-time { font-weight: bold; width: 60px; flex-shrink: 0; }
-            .print-content { flex-grow: 1; }
-            .print-title { font-weight: bold; font-size: 16px; }
-            .print-chn { font-size: 12px; color: #666; margin-top: 2px; }
-            .print-desc { font-size: 12px; color: #444; margin-top: 4px; white-space: pre-line; }
+            .print-day-header { border-bottom: 2px solid #333; margin-top: 30px; padding-bottom: 5px; margin-bottom: 15px; break-inside: avoid; }
+            .print-item { display: flex; gap: 20px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; break-inside: avoid; }
+            .print-time { font-weight: bold; width: 80px; }
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 max-w-md mx-auto shadow-2xl min-h-screen relative">
+<body class="bg-gray-50 text-gray-800 min-h-screen relative">
 
-    <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-40">
-        <div class="px-4 py-3 flex justify-between items-center bg-white border-b border-gray-100">
-            <div>
-                <h1 class="text-xl font-bold text-gray-900 tracking-tight">청두 & 시안 여행 <span id="liveBadge" class="text-[10px] text-gray-400 bg-gray-100 px-1 rounded align-top">OFFLINE</span></h1>
-                <p class="text-xs text-gray-500 flex items-center gap-1">
-                    <span id="totalDays">6박 7일</span>
-                    <span id="syncStatus" class="text-gray-300 text-[10px] ml-2"><i class="fa-solid fa-circle-notch fa-spin"></i> 연결 중...</span>
-                </p>
+    <!-- Header (Responsive) -->
+    <header class="bg-white shadow-sm sticky top-0 z-40 w-full">
+        <div class="max-w-5xl mx-auto">
+            <div class="px-4 py-3 flex justify-between items-center border-b border-gray-100">
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">청두 & 시안 여행 <span id="liveBadge" class="text-[10px] text-gray-400 bg-gray-100 px-1 rounded align-top">OFFLINE</span></h1>
+                    <p class="text-xs md:text-sm text-gray-500 flex items-center gap-1">
+                        <span id="totalDays">6박 7일</span>
+                        <span id="syncStatus" class="text-gray-300 text-[10px] ml-2"><i class="fa-solid fa-circle-notch fa-spin"></i> 연결 중...</span>
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleEditMode()" id="btnEditMode" class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition hover:bg-gray-200"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="openSettingsModal()" class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition hover:bg-gray-200"><i class="fa-solid fa-gear"></i></button>
+                </div>
             </div>
-            <div class="flex gap-2">
-                <button onclick="openSettingsModal()" class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition hover:bg-gray-200">
-                    <i class="fa-solid fa-gear"></i>
-                </button>
+            
+            <div class="flex border-b border-gray-200 bg-white">
+                <button onclick="switchTab('list')" class="flex-1 py-3 text-sm md:text-base font-medium text-center text-red-500 border-b-2 border-red-500 transition hover:bg-gray-50" id="tabList">📅 일정표</button>
+                <button onclick="switchTab('wishlist')" class="flex-1 py-3 text-sm md:text-base font-medium text-center text-gray-400 hover:text-gray-600 transition hover:bg-gray-50" id="tabWishlist">💖 보관함 (<span id="wishlistCount">0</span>)</button>
             </div>
-        </div>
-        
-        <div class="flex border-b border-gray-200 bg-white">
-            <button onclick="switchTab('list')" class="flex-1 py-3 text-sm font-medium text-center text-red-500 border-b-2 border-red-500 transition" id="tabList">📅 일정표</button>
-            <button onclick="switchTab('wishlist')" class="flex-1 py-3 text-sm font-medium text-center text-gray-400 hover:text-gray-600 transition" id="tabWishlist">💖 보관함 (<span id="wishlistCount">0</span>)</button>
-        </div>
 
-        <div id="dateNavWrapper" class="overflow-x-auto hide-scrollbar bg-white shadow-sm transition-all duration-300">
-            <div class="flex px-2 min-w-max" id="dateNav"></div>
+            <div id="dateNavWrapper" class="overflow-x-auto hide-scrollbar bg-white shadow-sm transition-all duration-300">
+                <div class="flex px-2 md:justify-center min-w-max" id="dateNav"></div>
+            </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main id="schedule-container" class="p-4 min-h-[60vh] pb-32"></main>
+    <!-- Main Content (Responsive Width) -->
+    <main id="schedule-container" class="p-4 min-h-[60vh] pb-32 max-w-5xl mx-auto transition-all duration-300"></main>
 
-    <!-- 🖨️ 인쇄 전용 숨겨진 영역 (여기에 전체 일정이 그려짐) -->
+    <!-- 🖨️ Print Area -->
     <div id="print-area" class="hidden"></div>
 
-    <!-- FAB -->
-    <div id="fabAdd" class="fixed bottom-24 right-6 z-30 hidden">
-        <button onclick="handleAddButton()" class="bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition transform active:scale-90"><i class="fa-solid fa-plus text-2xl"></i></button>
+    <!-- FAB (Floating Action Button) -->
+    <div id="fabAdd" class="fixed bottom-8 right-6 md:right-12 z-30 hidden">
+        <button onclick="handleAddButton()" class="bg-blue-600 text-white w-14 h-14 md:w-16 md:h-16 rounded-full shadow-xl flex items-center justify-center hover:bg-blue-700 transition transform active:scale-90 hover:scale-105">
+            <i class="fa-solid fa-plus text-2xl"></i>
+        </button>
     </div>
 
     <!-- Loading Overlay -->
     <div id="loading" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
         <div class="w-10 h-10 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-        <p class="text-gray-500 font-medium">데이터 안전하게 불러오는 중...</p>
+        <p class="text-gray-500 font-medium">여행 데이터 불러오는 중...</p>
     </div>
 
     <!-- Modals -->
     <!-- 1. Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-black/60 z-[70] hidden flex items-center justify-center px-6 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl w-full max-w-sm p-6 animate-fade-in shadow-2xl">
+    <div id="settingsModal" class="fixed inset-0 bg-black/60 z-[70] hidden flex items-center justify-center px-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-sm md:max-w-md p-6 animate-fade-in shadow-2xl">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-lg font-bold text-gray-900">설정 및 백업</h3>
-                <button onclick="closeSettingsModal()" class="text-gray-400"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            
             <div class="space-y-3">
                 <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
                     <h4 class="text-sm font-bold text-blue-800 mb-1">💾 데이터 백업</h4>
-                    <p class="text-xs text-blue-600 mb-3">현재 일정을 파일로 저장해둡니다.</p>
-                    <button onclick="downloadBackup()" class="w-full bg-white border border-blue-200 text-blue-600 py-2 rounded-lg text-sm font-bold hover:bg-blue-50">
-                        <i class="fa-solid fa-download mr-2"></i>내 컴퓨터에 저장하기
-                    </button>
+                    <p class="text-xs text-blue-600 mb-3">현재 일정을 파일로 저장합니다.</p>
+                    <button onclick="downloadBackup()" class="w-full bg-white border border-blue-200 text-blue-600 py-2 rounded-lg text-sm font-bold hover:bg-blue-50 transition"><i class="fa-solid fa-download mr-2"></i>PC/폰에 저장하기</button>
                 </div>
-
                 <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
                     <h4 class="text-sm font-bold text-gray-800 mb-1">♻️ 데이터 복원</h4>
-                    <p class="text-xs text-gray-500 mb-3">저장해둔 파일을 불러옵니다.</p>
-                    <label class="w-full block bg-white border border-gray-300 text-gray-600 py-2 rounded-lg text-sm font-bold text-center hover:bg-gray-100 cursor-pointer">
-                        <i class="fa-solid fa-upload mr-2"></i>파일 불러오기
+                    <label class="w-full block bg-white border border-gray-300 text-gray-600 py-2 rounded-lg text-sm font-bold text-center hover:bg-gray-100 cursor-pointer transition">
+                        <i class="fa-solid fa-upload mr-2"></i>백업 파일 불러오기
                         <input type="file" id="backupFile" accept=".json" class="hidden" onchange="restoreBackup(this)">
                     </label>
                 </div>
-
-                <!-- 🔥 인쇄 버튼 수정됨: printFullSchedule() 호출 -->
-                <button onclick="printFullSchedule()" class="w-full py-3 text-gray-800 font-bold text-sm bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-200">
-                    <i class="fa-solid fa-print mr-2"></i> 전체 일정 인쇄하기 (PDF)
-                </button>
+                <button onclick="printFullSchedule()" class="w-full py-3 text-gray-800 font-bold text-sm bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-200 transition"><i class="fa-solid fa-print mr-2"></i> 전체 일정 인쇄 (PDF)</button>
             </div>
-            
-            <div class="mt-6 pt-4 border-t border-gray-100 text-center">
-                <p class="text-[10px] text-gray-400">App Version 2.2 (Print Fix)</p>
-            </div>
+            <div class="mt-6 pt-4 border-t border-gray-100 text-center"><p class="text-[10px] text-gray-400">App Version 3.1 (Responsive)</p></div>
         </div>
     </div>
 
     <!-- 2. Map Modal -->
-    <div id="mapModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center px-6 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl w-full max-w-sm p-6 animate-fade-in shadow-2xl">
+    <div id="mapModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center px-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-sm md:max-w-md p-6 animate-fade-in shadow-2xl">
             <div class="flex justify-between items-start mb-4">
                 <div><h3 class="text-lg font-bold text-gray-900" id="modalTitle">장소</h3><p class="text-sm text-gray-500" id="modalChnName">중국어</p></div>
-                <button onclick="closeMapModal()" class="text-gray-400"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <button onclick="closeMapModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div id="mapActions" class="space-y-3"></div>
             <button onclick="copyChnName()" class="w-full mt-4 py-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-xl font-medium hover:bg-gray-100 transition"><i class="fa-regular fa-copy mr-1"></i> 중국어 지명 복사</button>
@@ -137,10 +130,10 @@
 
     <!-- 3. Edit Modal -->
     <div id="editModal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-end sm:items-center justify-center sm:px-4">
-        <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 animate-slide-up sm:animate-fade-in h-[90vh] sm:h-auto overflow-y-auto">
+        <div class="bg-white w-full max-w-md md:max-w-lg rounded-t-2xl sm:rounded-2xl p-6 animate-slide-up sm:animate-fade-in h-[85vh] sm:h-auto overflow-y-auto shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold" id="editModalTitle">추가</h3>
-                <button onclick="closeEditModal()" class="text-gray-400 p-2"><i class="fa-solid fa-xmark text-2xl"></i></button>
+                <button onclick="closeEditModal()" class="text-gray-400 p-2 hover:text-gray-600"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
             <div id="wishlistImportSection" class="mb-6 hidden">
                 <button onclick="toggleWishlistPicker()" class="w-full flex items-center justify-between bg-red-50 text-red-600 p-3 rounded-xl border border-red-100 hover:bg-red-100 transition"><span class="font-bold text-sm"><i class="fa-solid fa-heart mr-2"></i>보관함에서 불러오기</span><i class="fa-solid fa-chevron-down"></i></button>
@@ -149,30 +142,34 @@
             <form id="editForm" onsubmit="saveItem(event)" class="space-y-4">
                 <input type="hidden" id="editItemId"><input type="hidden" id="editItemMode">
                 <div class="grid grid-cols-3 gap-3" id="timeInputGroup">
-                    <div class="col-span-1"><label class="block text-xs font-bold text-gray-500 mb-1">시간</label><input type="text" id="editTime" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-center"></div>
-                    <div class="col-span-2"><label class="block text-xs font-bold text-gray-500 mb-1">아이콘</label><select id="editIcon" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3"><option value="fa-location-dot">📍 장소</option><option value="fa-utensils">🍴 식사</option><option value="fa-hotel">🏨 숙소</option><option value="fa-plane">✈️ 공항</option><option value="fa-train">🚄 기차</option><option value="fa-camera">📷 관광</option><option value="fa-bag-shopping">🛍️ 쇼핑</option><option value="fa-coffee">☕ 카페</option></select></div>
+                    <div class="col-span-1"><label class="block text-xs font-bold text-gray-500 mb-1">시간</label><input type="text" id="editTime" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-center focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-gray-500 mb-1">아이콘</label><select id="editIcon" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500"><option value="fa-location-dot">📍 장소</option><option value="fa-utensils">🍴 식사</option><option value="fa-hotel">🏨 숙소</option><option value="fa-plane">✈️ 공항</option><option value="fa-train">🚄 기차</option><option value="fa-camera">📷 관광</option><option value="fa-bag-shopping">🛍️ 쇼핑</option><option value="fa-coffee">☕ 카페</option></select></div>
                 </div>
-                <div id="iconOnlyGroup" class="hidden"><label class="block text-xs font-bold text-gray-500 mb-1">아이콘</label><select id="editIconOnly" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3" onchange="document.getElementById('editIcon').value = this.value"><option value="fa-location-dot">📍 장소</option><option value="fa-utensils">🍴 식사</option><option value="fa-hotel">🏨 숙소</option><option value="fa-plane">✈️ 공항</option><option value="fa-train">🚄 기차</option><option value="fa-camera">📷 관광</option><option value="fa-bag-shopping">🛍️ 쇼핑</option><option value="fa-coffee">☕ 카페</option></select></div>
-                <div><label class="block text-xs font-bold text-gray-500 mb-1">장소명 (한글)</label><input type="text" id="editTitle" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-medium" required></div>
-                <div><label class="block text-xs font-bold text-gray-500 mb-1">장소명 (중국어)</label><input type="text" id="editChnName" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3"></div>
-                <div><label class="block text-xs font-bold text-gray-500 mb-1">설명</label><textarea id="editDesc" rows="3" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3"></textarea></div>
+                <div id="iconOnlyGroup" class="hidden"><label class="block text-xs font-bold text-gray-500 mb-1">아이콘</label><select id="editIconOnly" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500" onchange="document.getElementById('editIcon').value = this.value"><option value="fa-location-dot">📍 장소</option><option value="fa-utensils">🍴 식사</option><option value="fa-hotel">🏨 숙소</option><option value="fa-plane">✈️ 공항</option><option value="fa-train">🚄 기차</option><option value="fa-camera">📷 관광</option><option value="fa-bag-shopping">🛍️ 쇼핑</option><option value="fa-coffee">☕ 카페</option></select></div>
+                <div><label class="block text-xs font-bold text-gray-500 mb-1">장소명 (한글)</label><input type="text" id="editTitle" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-medium focus:ring-2 focus:ring-blue-500 outline-none" required></div>
+                <div><label class="block text-xs font-bold text-gray-500 mb-1">장소명 (중국어)</label><input type="text" id="editChnName" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                <div><label class="block text-xs font-bold text-gray-500 mb-1">설명</label><textarea id="editDesc" rows="3" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none"></textarea></div>
                 <div class="border border-gray-100 rounded-xl p-3 bg-gray-50">
                     <p class="text-xs font-bold text-gray-500 mb-2">🗺️ 지도 설정</p>
-                    <div class="mb-3"><input type="url" id="editMapUrl" placeholder="지도 링크 (URL)" class="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm"></div>
-                    <details class="text-xs text-gray-500"><summary class="cursor-pointer">좌표 입력</summary><div class="grid grid-cols-2 gap-2 mt-2"><input type="number" step="any" id="editLat" placeholder="위도" class="bg-white border p-2"><input type="number" step="any" id="editLng" placeholder="경도" class="bg-white border p-2"></div></details>
+                    <div class="mb-3"><input type="url" id="editMapUrl" placeholder="지도 링크 (URL)" class="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm focus:ring-1 focus:ring-blue-300 outline-none"></div>
+                    <details class="text-xs text-gray-500"><summary class="cursor-pointer hover:text-blue-500">좌표 입력</summary><div class="grid grid-cols-2 gap-2 mt-2"><input type="number" step="any" id="editLat" placeholder="위도" class="bg-white border p-2 rounded"><input type="number" step="any" id="editLng" placeholder="경도" class="bg-white border p-2 rounded"></div></details>
                 </div>
-                <div class="flex gap-3 pt-2"><button type="button" onclick="closeEditModal()" class="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-xl font-bold">취소</button><button type="submit" id="btnSave" class="flex-1 bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-lg">저장</button></div>
-                <div class="text-center pt-2"><button type="button" onclick="deleteCurrentItem()" id="btnDelete" class="text-red-400 text-xs py-2 px-4 hidden"><i class="fa-solid fa-trash mr-1"></i> 삭제</button></div>
+                <div class="flex gap-3 pt-2"><button type="button" onclick="closeEditModal()" class="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-xl font-bold hover:bg-gray-200 transition">취소</button><button type="submit" id="btnSave" class="flex-1 bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition">저장</button></div>
+                <div class="text-center pt-2"><button type="button" onclick="deleteCurrentItem()" id="btnDelete" class="text-red-400 text-xs py-2 px-4 hidden hover:text-red-600 transition"><i class="fa-solid fa-trash mr-1"></i> 삭제</button></div>
             </form>
         </div>
     </div>
 
-    <div class="fixed bottom-6 right-6 z-20"><button onclick="window.scrollTo({top:0, behavior:'smooth'})" class="bg-white text-gray-800 w-10 h-10 rounded-full shadow border border-gray-200 flex items-center justify-center"><i class="fa-solid fa-arrow-up"></i></button></div>
+    <!-- Scroll Top -->
+    <div class="fixed bottom-6 right-6 z-20">
+        <button onclick="window.scrollTo({top:0, behavior:'smooth'})" class="bg-white text-gray-800 w-10 h-10 rounded-full shadow border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition"><i class="fa-solid fa-arrow-up"></i></button>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // -------------------------------------------------------------------- 
         const firebaseConfig = {
           apiKey: "AIzaSyDhjSgDBdNu8stWUlqQbCWU2YhZkczlj3o",
           authDomain: "mytrip-2025-2bc36.firebaseapp.com",
@@ -182,6 +179,7 @@
           appId: "1:119786186294:web:724b3881fcc070096c9a97",
           measurementId: "G-LCQD1E1QL7"
         };
+        // --------------------------------------------------------------------
 
         let app, db;
         let isDataLoadedFromServer = false;
@@ -205,14 +203,13 @@
         window.saveItem = saveItem;
         window.deleteCurrentItem = deleteCurrentItem;
         window.handleAddButton = handleAddButton;
+        window.toggleEditMode = toggleEditMode;
         window.toggleWishlistPicker = toggleWishlistPicker;
         window.fillFromWishlist = fillFromWishlist;
         window.openSettingsModal = () => document.getElementById('settingsModal').classList.remove('hidden');
         window.closeSettingsModal = () => document.getElementById('settingsModal').classList.add('hidden');
         window.downloadBackup = downloadBackup;
         window.restoreBackup = restoreBackup;
-        
-        // 🔥 New Print Function
         window.printFullSchedule = printFullSchedule;
 
         // Fallback Data
@@ -236,23 +233,18 @@
         let isEditMode = false; 
         let modalTarget = null;
 
-        // --- Print Logic (NEW) ---
+        // --- Backup & Print Logic ---
         function printFullSchedule() {
             const printArea = document.getElementById('print-area');
-            let html = `<h1 style="text-align:center; font-size:24px; margin-bottom:30px;">청두 & 시안 6박 7일 여행 일정표</h1>`;
-            
+            let html = `<h1 style="text-align:center; font-size:24px; margin-bottom:30px;">청두 & 시안 6박 7일</h1>`;
             scheduleData.forEach(day => {
-                html += `
-                    <div class="print-day-header">
-                        <span style="font-size:20px; font-weight:bold;">Day ${day.day}</span> 
-                        <span style="font-size:16px; color:#555; margin-left:10px;">${day.date} (${day.city})</span>
-                        <div style="font-size:14px; color:#777; margin-top:4px;">${day.title}</div>
-                    </div>
-                `;
-                
-                if (day.items.length === 0) {
-                    html += `<div style="padding:10px; color:#999; font-style:italic; font-size:12px;">일정 없음</div>`;
-                } else {
+                html += `<div class="print-day-header">
+                    <span style="font-size:20px; font-weight:bold;">Day ${day.day}</span> 
+                    <span style="font-size:16px; color:#555; margin-left:10px;">${day.date} (${day.city})</span>
+                    <div style="font-size:14px; color:#777; margin-top:4px;">${day.title}</div>
+                </div>`;
+                if (day.items.length === 0) html += `<div style="padding:10px; color:#999;">일정 없음</div>`;
+                else {
                     day.items.forEach(item => {
                         html += `
                             <div class="print-item">
@@ -267,63 +259,33 @@
                     });
                 }
             });
-            
-            // 위시리스트 추가 (선택사항)
+            // Wishlist Print
             if (wishlistData.length > 0) {
-                html += `<div class="print-day-header" style="margin-top:50px; border-color:#ccc;">💖 가고 싶은 곳 (보관함)</div>`;
+                html += `<div class="print-day-header" style="margin-top:50px; border-color:#ccc;">💖 보관함 (가고 싶은 곳)</div>`;
                 wishlistData.forEach(item => {
-                    html += `
-                        <div class="print-item">
-                            <div class="print-time" style="font-size:20px; color:#e53e3e;">♥</div>
-                            <div class="print-content">
-                                <div class="print-title">${item.title}</div>
-                                ${item.chnName ? `<div class="print-chn">${item.chnName}</div>` : ''}
-                                ${item.desc ? `<div class="print-desc">${item.desc}</div>` : ''}
-                            </div>
-                        </div>
-                    `;
+                    html += `<div class="print-item"><div class="print-time">♥</div><div class="print-content"><div class="print-title">${item.title}</div><div class="print-chn">${item.chnName||''}</div></div></div>`;
                 });
             }
-
             printArea.innerHTML = html;
             window.print();
         }
-
-        // --- Backup & Restore Logic ---
         function downloadBackup() {
-            if (!scheduleData || scheduleData.length === 0) { alert("백업할 데이터가 없습니다."); return; }
-            const backupData = { schedule: scheduleData, wishlist: wishlistData, timestamp: new Date().toISOString() };
-            const blob = new Blob([JSON.stringify(backupData, null, 2)], {type: "application/json"});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `trip_backup_${new Date().toISOString().slice(0,10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const blob = new Blob([JSON.stringify({ schedule: scheduleData, wishlist: wishlistData }, null, 2)], {type: "application/json"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `trip_backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
-
         function restoreBackup(input) {
-            if (!input.files || !input.files[0]) return;
-            if (!isDataLoadedFromServer) { alert("서버와 연결된 상태에서만 복원할 수 있습니다."); input.value = ''; return; }
-            if (!confirm("⚠️ 주의!\n\n현재 앱에 있는 모든 일정이 삭제되고,\n선택한 백업 파일 내용으로 덮어씌워집니다.\n\n진행하시겠습니까?")) { input.value = ''; return; }
-            const file = input.files[0];
+            if (!input.files[0] || !confirm("데이터를 덮어쓰시겠습니까?")) return;
             const reader = new FileReader();
             reader.onload = async function(e) {
                 try {
-                    const restored = JSON.parse(e.target.result);
-                    if (restored.schedule && Array.isArray(restored.schedule)) {
-                        scheduleData = restored.schedule;
-                        wishlistData = restored.wishlist || [];
-                        await saveData(); 
-                        alert("복원 완료!");
-                        closeSettingsModal();
-                        render();
-                    } else throw new Error("올바르지 않은 파일");
-                } catch (err) { alert("복원 실패: " + err.message); }
+                    const d = JSON.parse(e.target.result);
+                    scheduleData = d.schedule; wishlistData = d.wishlist;
+                    await saveData(); 
+                    alert("복원 완료"); render();
+                } catch(err) { alert("오류"); }
             };
-            reader.readAsText(file);
-            input.value = ''; 
+            reader.readAsText(input.files[0]);
         }
 
         // --- Firebase Logic ---
@@ -378,7 +340,7 @@
         }
 
         async function saveData() {
-            if (!db || !isDataLoadedFromServer) { alert("⚠️ 서버와 연결되지 않아 저장할 수 없습니다."); return; }
+            if (!db || !isDataLoadedFromServer) { alert("⚠️ 서버 연결 대기중"); return; }
             document.getElementById('syncStatus').innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-orange-500"></i>`;
             try {
                 await setDoc(doc(db, "trips", "shared_schedule"), { data: scheduleData, wishlist: wishlistData });
@@ -420,16 +382,22 @@
 
         function renderSchedule(container) {
             const data = scheduleData[currentDay];
-            let html = `<div class="animate-fade-in pb-16"><div class="mb-6 mt-2"><h2 class="text-2xl font-bold text-gray-800">${data.title}</h2><p class="text-sm text-gray-500 mt-1">${data.date} · ${data.items.length}개의 일정</p></div><div class="timeline-line"></div>`;
-            if (data.items.length === 0) html += `<div class="pl-12 py-8 text-gray-400 text-sm">일정이 없습니다. + 버튼으로 추가하세요.</div>`;
+            let html = `<div class="animate-fade-in pb-16"><div class="mb-6 mt-2 text-center md:text-left"><h2 class="text-2xl font-bold text-gray-800">${data.title}</h2><p class="text-sm text-gray-500 mt-1">${data.date} · ${data.items.length}개의 일정</p></div><div class="relative mt-6">`;
+            
+            // Timeline Line (Centered on Desktop, Left on Mobile)
+            html += `<div class="absolute left-7 top-4 bottom-0 w-0.5 bg-gray-200 md:left-1/2 md:-translate-x-1/2"></div><div class="space-y-6">`;
+
+            if (data.items.length === 0) html += `<div class="pl-16 py-8 text-gray-400 text-sm md:text-center md:pl-0">일정이 없습니다. + 버튼으로 추가하세요.</div>`;
+            
             data.items.forEach((item, index) => html += createCardHtml(item, index + 1, 'schedule'));
-            html += `</div>`;
+            html += `</div></div></div>`;
             container.innerHTML = html;
         }
 
         function renderWishlist(container) {
             if (wishlistData.length === 0) { container.innerHTML = `<div class="flex flex-col items-center justify-center h-64 text-gray-400 animate-fade-in"><i class="fa-regular fa-heart text-4xl mb-3"></i><p>보관함이 비어있습니다.</p></div>`; return; }
-            let html = `<div class="mt-4 animate-fade-in grid grid-cols-1 gap-4">`;
+            // Grid for Wishlist (Mobile: 1 col, Tablet: 2 cols, PC: 3 cols)
+            let html = `<div class="mt-4 animate-fade-in grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
             wishlistData.forEach(item => html += createCardHtml(item, null, 'wishlist'));
             html += `</div>`;
             container.innerHTML = html;
@@ -438,26 +406,60 @@
         function createCardHtml(item, index, type) {
             let actionButtons = '';
             if (type === 'schedule') {
-                actionButtons = `<div class="absolute top-3 right-3"><button onclick="openEditModal(${item.id}, 'schedule')" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen"></i></button></div>`;
+                actionButtons = `<div class="absolute top-3 right-3"><button onclick="openEditModal(${item.id}, 'schedule')" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-600 transition"><i class="fa-solid fa-pen"></i></button></div>`;
             } else if (type === 'wishlist') {
-                actionButtons = `<div class="absolute top-3 right-3"><button onclick="openEditModal(${item.id}, 'wishlist')" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen"></i></button></div>`;
+                actionButtons = `<div class="absolute top-3 right-3"><button onclick="openEditModal(${item.id}, 'wishlist')" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-600 transition"><i class="fa-solid fa-pen"></i></button></div>`;
             }
             const isTimeline = type === 'schedule';
-            return `
-                <div class="relative flex gap-4 mb-6 z-10 items-start group animate-fade-in">
-                    ${isTimeline ? `<div class="flex-shrink-0 w-14 flex flex-col items-center"><div class="w-8 h-8 rounded-full ${item.isHighlight ? 'bg-red-500 text-white' : 'bg-white border-2 border-gray-200 text-gray-500'} shadow-sm flex items-center justify-center text-sm font-bold z-10 mb-1">${index}</div><span class="text-xs text-gray-400 font-mono">${item.time}</span></div>` 
-                    : `<div class="flex-shrink-0 w-12 flex flex-col items-center pt-1"><div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-lg shadow-sm"><i class="fa-solid ${item.icon}"></i></div></div>`}
-                    <div class="flex-1 bg-white rounded-xl p-4 shadow-sm border border-gray-100 relative overflow-hidden">
+            
+            if (isTimeline) {
+                // Timeline Layout (Responsive: Mobile vs Desktop)
+                return `
+                <div class="relative flex gap-4 z-10 items-start group animate-fade-in md:justify-center">
+                    <div class="flex-shrink-0 w-14 flex flex-col items-center md:absolute md:left-1/2 md:-translate-x-1/2 md:z-20">
+                        <div class="w-8 h-8 rounded-full ${item.isHighlight ? 'bg-red-500 text-white' : 'bg-white border-2 border-gray-200 text-gray-500'} shadow-sm flex items-center justify-center text-sm font-bold mb-1 transition-transform group-hover:scale-110">${index}</div>
+                    </div>
+                    <div class="flex-1 bg-white rounded-xl p-4 shadow-sm border border-gray-100 relative overflow-hidden hover:shadow-md transition-shadow md:max-w-md md:w-full ${index % 2 === 0 ? 'md:mr-auto md:pr-12' : 'md:ml-auto md:pl-12'}">
                         ${actionButtons}
-                        <div class="flex justify-between items-start mb-1 pr-8"><h3 class="font-bold text-gray-800 text-lg leading-tight">${item.title}</h3></div>
-                        <p class="text-xs text-gray-500 font-medium mb-2">${item.chnName || '중국어 명칭 없음'}</p>
+                        <div class="flex justify-between items-start mb-1 pr-8">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-blue-500 font-bold mb-1 md:hidden">${item.time}</span>
+                                <h3 class="font-bold text-gray-800 text-lg leading-tight">${item.title}</h3>
+                            </div>
+                            <span class="hidden md:block text-sm font-mono text-blue-500 bg-blue-50 px-2 py-1 rounded">${item.time}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 font-medium mb-2">${item.chnName || ''}</p>
                         <p class="text-sm text-gray-600 leading-relaxed mb-3 line-clamp-2">${item.desc || ''}</p>
-                        <div class="flex gap-2 mt-3 border-t border-gray-50 pt-3"><button onclick="openMapModal(${item.id})" class="flex-1 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition"><i class="fa-solid fa-map-location-dot"></i> 지도 보기</button></div>
+                        <div class="flex gap-2 mt-3 border-t border-gray-50 pt-3"><button onclick="openMapModal(${item.id})" class="flex-1 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition"><i class="fa-solid fa-map-location-dot"></i> 지도</button></div>
                     </div>
                 </div>`;
+            } else {
+                // Wishlist Card Layout
+                return `
+                <div class="relative flex flex-col bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition group">
+                    ${actionButtons}
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-lg shadow-sm flex-shrink-0"><i class="fa-solid ${item.icon}"></i></div>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-lg leading-tight line-clamp-1">${item.title}</h3>
+                            <p class="text-xs text-gray-500 font-medium line-clamp-1">${item.chnName || '중국어 명칭 없음'}</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-600 leading-relaxed mb-3 line-clamp-2 flex-grow">${item.desc || ''}</p>
+                    <div class="flex gap-2 mt-auto border-t border-gray-50 pt-3">
+                        <button onclick="openMapModal(${item.id})" class="flex-1 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition"><i class="fa-solid fa-map-location-dot"></i> 지도</button>
+                    </div>
+                </div>`;
+            }
         }
 
-        // Edit & Save Logic
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const btn = document.getElementById('btnEditMode');
+            btn.className = `w-10 h-10 rounded-full flex items-center justify-center transition ${isEditMode ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`;
+            render();
+        }
+
         function handleAddButton() { openEditModal(null, viewMode === 'wishlist' ? 'wishlist' : 'schedule'); }
         
         function openEditModal(itemId, mode) {
@@ -582,7 +584,7 @@
                 container.innerHTML += `<a href="${gaodeLink}" target="_blank" class="flex items-center justify-center gap-2 p-4 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition"><span class="font-bold text-sm">📍 고덕지도 좌표</span></a>`;
             }
             const query = item.chnName || item.title;
-            container.innerHTML += `<div class="mt-3 border-t border-gray-100 pt-3 grid grid-cols-2 gap-3"><a href="https://uri.amap.com/search?keyword=${encodeURIComponent(query)}" target="_blank" class="p-3 rounded-xl bg-white border border-gray-200 text-center text-sm font-bold text-blue-600">고덕 검색</a><a href="http://api.map.baidu.com/geocoder?address=${encodeURIComponent(query)}&output=html" target="_blank" class="p-3 rounded-xl bg-white border border-gray-200 text-center text-sm font-bold text-red-600">바이두 검색</a></div>`;
+            container.innerHTML += `<div class="mt-3 border-t border-gray-100 pt-3 grid grid-cols-2 gap-3"><a href="https://uri.amap.com/search?keyword=${encodeURIComponent(query)}" target="_blank" class="p-3 rounded-xl bg-white border border-gray-200 text-center text-sm font-bold text-blue-600 hover:bg-blue-50">고덕 검색</a><a href="http://api.map.baidu.com/geocoder?address=${encodeURIComponent(query)}&output=html" target="_blank" class="p-3 rounded-xl bg-white border border-gray-200 text-center text-sm font-bold text-red-600 hover:bg-red-50">바이두 검색</a></div>`;
             document.getElementById('mapModal').classList.remove('hidden');
         }
         function closeMapModal() { document.getElementById('mapModal').classList.add('hidden'); }
